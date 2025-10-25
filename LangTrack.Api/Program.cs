@@ -24,6 +24,51 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? "Data Source=langtrack.db";
 builder.Services.AddInfrastructure(connectionString);
 
+// Add JWT Authentication
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "LangTrack",
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "LangTrack.Users",
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "LangTrack_Super_Secret_Key_2024_Minimum_32_Characters"))
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    // Add permission-based policies
+    options.AddPolicy("words:create", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("words", "create")));
+    options.AddPolicy("words:read", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("words", "read")));
+    options.AddPolicy("words:update", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("words", "update")));
+    options.AddPolicy("words:delete", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("words", "delete")));
+    
+    options.AddPolicy("study:create", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("study", "create")));
+    options.AddPolicy("study:read", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("study", "read")));
+    
+    options.AddPolicy("stats:read", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("stats", "read")));
+    
+    options.AddPolicy("users:read", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("users", "read")));
+    options.AddPolicy("users:update", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("users", "update")));
+    options.AddPolicy("users:delete", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("users", "delete")));
+    
+    options.AddPolicy("roles:create", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("roles", "create")));
+    options.AddPolicy("roles:read", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("roles", "read")));
+    options.AddPolicy("roles:update", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("roles", "update")));
+    options.AddPolicy("roles:delete", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("roles", "delete")));
+    
+    options.AddPolicy("permissions:read", policy => policy.Requirements.Add(new LangTrack.Api.Authorization.PermissionRequirement("permissions", "read")));
+});
+
+// Register permission handler
+builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, LangTrack.Api.Authorization.PermissionHandler>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -43,6 +88,8 @@ app.UseRouting();
 // Global exception handling
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+// Authentication & Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -13,16 +13,17 @@ public class WordService : IWordService
         _wordRepository = wordRepository;
     }
 
-    public async Task<WordDto> CreateWordAsync(CreateWordDto createWordDto)
+    public async Task<WordDto> CreateWordAsync(CreateWordDto createWordDto, Guid userId)
     {
-        // Check if word already exists
-        if (await _wordRepository.ExistsByTextAsync(createWordDto.Text))
+        // Check if word already exists for this user
+        if (await _wordRepository.ExistsByTextAsync(createWordDto.Text, userId))
         {
             throw new InvalidOperationException("Word with this text already exists");
         }
 
         var word = new Word
         {
+            UserId = userId,
             Text = createWordDto.Text.Trim(),
             Meaning = createWordDto.Meaning.Trim(),
             Example = createWordDto.Example?.Trim(),
@@ -33,10 +34,10 @@ public class WordService : IWordService
         return MapToDto(createdWord);
     }
 
-    public async Task<WordListDto> GetWordsAsync(int page = 1, int pageSize = 20, string? searchQuery = null)
+    public async Task<WordListDto> GetWordsAsync(Guid userId, int page = 1, int pageSize = 20, string? searchQuery = null)
     {
-        var words = await _wordRepository.GetAllAsync(page, pageSize, searchQuery);
-        var totalCount = await _wordRepository.GetTotalCountAsync(searchQuery);
+        var words = await _wordRepository.GetAllAsync(userId, page, pageSize, searchQuery);
+        var totalCount = await _wordRepository.GetTotalCountAsync(userId, searchQuery);
 
         return new WordListDto
         {
@@ -47,15 +48,15 @@ public class WordService : IWordService
         };
     }
 
-    public async Task<WordDto?> GetRandomWordAsync()
+    public async Task<WordDto?> GetRandomWordAsync(Guid userId)
     {
-        var word = await _wordRepository.GetRandomAsync();
+        var word = await _wordRepository.GetRandomAsync(userId);
         return word != null ? MapToDto(word) : null;
     }
 
-    public async Task<WordDto?> GetWordByIdAsync(Guid id)
+    public async Task<WordDto?> GetWordByIdAsync(Guid id, Guid userId)
     {
-        var word = await _wordRepository.GetByIdAsync(id);
+        var word = await _wordRepository.GetByIdAsync(id, userId);
         return word != null ? MapToDto(word) : null;
     }
 

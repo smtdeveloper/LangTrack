@@ -4,5 +4,5 @@ namespace LangTrack.Application.Services;
 
 public interface IStatsService
 {
-    Task<StatsDto> GetStatsAsync();
+    Task<StatsDto> GetStatsAsync(Guid userId);
 }

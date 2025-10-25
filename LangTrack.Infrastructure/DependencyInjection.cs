@@ -13,8 +13,11 @@ public static class DependencyInjection
         services.AddDbContext<LangTrackDbContext>(options =>
             options.UseSqlite(connectionString));
 
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
         services.AddScoped<IStudyLogRepository, StudyLogRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
 
         return services;
     }

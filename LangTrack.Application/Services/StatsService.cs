@@ -14,11 +14,11 @@ public class StatsService : IStatsService
         _studyLogRepository = studyLogRepository;
     }
 
-    public async Task<StatsDto> GetStatsAsync()
+    public async Task<StatsDto> GetStatsAsync(Guid userId)
     {
-        var totalWords = await _wordRepository.GetTotalCountAsync();
-        var studiedToday = await _studyLogRepository.GetStudiedTodayCountAsync();
-        var streakDays = await _studyLogRepository.GetStreakDaysAsync();
+        var totalWords = await _wordRepository.GetTotalCountAsync(userId);
+        var studiedToday = await _studyLogRepository.GetStudiedTodayCountAsync(userId);
+        var streakDays = await _studyLogRepository.GetStreakDaysAsync(userId);
 
         return new StatsDto
         {

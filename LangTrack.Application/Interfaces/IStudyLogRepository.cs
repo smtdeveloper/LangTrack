@@ -5,8 +5,8 @@ namespace LangTrack.Application.Interfaces;
 public interface IStudyLogRepository
 {
     Task<StudyLog> CreateAsync(StudyLog studyLog);
-    Task<IEnumerable<StudyLog>> GetByWordIdAsync(Guid wordId);
-    Task<IEnumerable<StudyLog>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
-    Task<int> GetStudiedTodayCountAsync();
-    Task<int> GetStreakDaysAsync();
+    Task<IEnumerable<StudyLog>> GetByWordIdAsync(Guid wordId, Guid userId);
+    Task<IEnumerable<StudyLog>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, Guid userId);
+    Task<int> GetStudiedTodayCountAsync(Guid userId);
+    Task<int> GetStreakDaysAsync(Guid userId);
 }

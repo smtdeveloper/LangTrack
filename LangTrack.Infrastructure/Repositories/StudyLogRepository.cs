@@ -21,38 +21,39 @@ public class StudyLogRepository : IStudyLogRepository
         return studyLog;
     }
 
-    public async Task<IEnumerable<StudyLog>> GetByWordIdAsync(Guid wordId)
+    public async Task<IEnumerable<StudyLog>> GetByWordIdAsync(Guid wordId, Guid userId)
     {
         return await _context.StudyLogs
-            .Where(sl => sl.WordId == wordId)
+            .Where(sl => sl.WordId == wordId && sl.UserId == userId)
             .OrderByDescending(sl => sl.StudiedAtUtc)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<StudyLog>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+    public async Task<IEnumerable<StudyLog>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, Guid userId)
     {
         return await _context.StudyLogs
-            .Where(sl => sl.StudiedAtUtc >= startDate && sl.StudiedAtUtc <= endDate)
+            .Where(sl => sl.StudiedAtUtc >= startDate && sl.StudiedAtUtc <= endDate && sl.UserId == userId)
             .OrderByDescending(sl => sl.StudiedAtUtc)
             .ToListAsync();
     }
 
-    public async Task<int> GetStudiedTodayCountAsync()
+    public async Task<int> GetStudiedTodayCountAsync(Guid userId)
     {
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
         
         return await _context.StudyLogs
-            .CountAsync(sl => sl.StudiedAtUtc >= today && sl.StudiedAtUtc < tomorrow);
+            .CountAsync(sl => sl.StudiedAtUtc >= today && sl.StudiedAtUtc < tomorrow && sl.UserId == userId);
     }
 
-    public async Task<int> GetStreakDaysAsync()
+    public async Task<int> GetStreakDaysAsync(Guid userId)
     {
         var today = DateTime.UtcNow.Date;
         var streakDays = 0;
         
-        // Get all unique study dates, ordered by date descending
+        // Get all unique study dates for this user, ordered by date descending
         var studyDates = await _context.StudyLogs
+            .Where(sl => sl.UserId == userId)
             .Select(sl => sl.StudiedAtUtc.Date)
             .Distinct()
             .OrderByDescending(date => date)

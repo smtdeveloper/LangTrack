@@ -14,23 +14,23 @@ public class WordRepository : IWordRepository
         _context = context;
     }
 
-    public async Task<Word?> GetByIdAsync(Guid id)
+    public async Task<Word?> GetByIdAsync(Guid id, Guid userId)
     {
         return await _context.Words
             .Include(w => w.StudyLogs)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
     }
 
-    public async Task<Word?> GetByTextAsync(string text)
+    public async Task<Word?> GetByTextAsync(string text, Guid userId)
     {
         return await _context.Words
             .Include(w => w.StudyLogs)
-            .FirstOrDefaultAsync(w => w.Text.ToLower() == text.ToLower());
+            .FirstOrDefaultAsync(w => w.Text.ToLower() == text.ToLower() && w.UserId == userId);
     }
 
-    public async Task<Word?> GetRandomAsync()
+    public async Task<Word?> GetRandomAsync(Guid userId)
     {
-        var count = await _context.Words.CountAsync();
+        var count = await _context.Words.CountAsync(w => w.UserId == userId);
         if (count == 0) return null;
 
         var random = new Random();
@@ -38,13 +38,14 @@ public class WordRepository : IWordRepository
         
         return await _context.Words
             .Include(w => w.StudyLogs)
+            .Where(w => w.UserId == userId)
             .Skip(skip)
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<Word>> GetAllAsync(int page = 1, int pageSize = 20, string? searchQuery = null)
+    public async Task<IEnumerable<Word>> GetAllAsync(Guid userId, int page = 1, int pageSize = 20, string? searchQuery = null)
     {
-        var query = _context.Words.AsQueryable();
+        var query = _context.Words.Where(w => w.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -68,15 +69,15 @@ public class WordRepository : IWordRepository
         return word;
     }
 
-    public async Task<bool> ExistsByTextAsync(string text)
+    public async Task<bool> ExistsByTextAsync(string text, Guid userId)
     {
         return await _context.Words
-            .AnyAsync(w => w.Text.ToLower() == text.ToLower());
+            .AnyAsync(w => w.Text.ToLower() == text.ToLower() && w.UserId == userId);
     }
 
-    public async Task<int> GetTotalCountAsync(string? searchQuery = null)
+    public async Task<int> GetTotalCountAsync(Guid userId, string? searchQuery = null)
     {
-        var query = _context.Words.AsQueryable();
+        var query = _context.Words.Where(w => w.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {

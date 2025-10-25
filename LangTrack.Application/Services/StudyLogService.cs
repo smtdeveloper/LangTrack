@@ -15,10 +15,10 @@ public class StudyLogService : IStudyLogService
         _wordRepository = wordRepository;
     }
 
-    public async Task<StudyLogDto> CreateStudyLogAsync(CreateStudyLogDto createStudyLogDto)
+    public async Task<StudyLogDto> CreateStudyLogAsync(CreateStudyLogDto createStudyLogDto, Guid userId)
     {
-        // Check if word exists
-        var word = await _wordRepository.GetByIdAsync(createStudyLogDto.WordId);
+        // Check if word exists and belongs to user
+        var word = await _wordRepository.GetByIdAsync(createStudyLogDto.WordId, userId);
         if (word == null)
         {
             throw new InvalidOperationException("Word not found");
@@ -26,6 +26,7 @@ public class StudyLogService : IStudyLogService
 
         var studyLog = new StudyLog
         {
+            UserId = userId,
             WordId = createStudyLogDto.WordId,
             StudiedAtUtc = createStudyLogDto.StudiedAtUtc ?? DateTime.UtcNow
         };
@@ -34,9 +35,9 @@ public class StudyLogService : IStudyLogService
         return MapToDto(createdStudyLog);
     }
 
-    public async Task<IEnumerable<StudyLogDto>> GetStudyLogsByWordIdAsync(Guid wordId)
+    public async Task<IEnumerable<StudyLogDto>> GetStudyLogsByWordIdAsync(Guid wordId, Guid userId)
     {
-        var studyLogs = await _studyLogRepository.GetByWordIdAsync(wordId);
+        var studyLogs = await _studyLogRepository.GetByWordIdAsync(wordId, userId);
         return studyLogs.Select(MapToDto);
     }
 

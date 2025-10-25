@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using LangTrack.Application.DTOs;
 using LangTrack.Application.Services;
 using LangTrack.Api.Validators;
@@ -7,6 +8,7 @@ namespace LangTrack.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Authorize]
 public class WordsController : ControllerBase
 {
     private readonly IWordService _wordService;
@@ -22,6 +24,13 @@ public class WordsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<WordDto>> CreateWord([FromBody] CreateWordDto createWordDto)
     {
+        // Get current user ID
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { error = "UNAUTHORIZED", message = "Invalid token" });
+        }
+
         // Validation
         var validationErrors = CreateWordValidator.Validate(createWordDto);
         if (validationErrors.Any())
@@ -31,7 +40,7 @@ public class WordsController : ControllerBase
 
         try
         {
-            var word = await _wordService.CreateWordAsync(createWordDto);
+            var word = await _wordService.CreateWordAsync(createWordDto, userId.Value);
             return CreatedAtAction(nameof(GetWordById), new { id = word.Id }, word);
         }
         catch (InvalidOperationException ex)
@@ -49,10 +58,17 @@ public class WordsController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? q = null)
     {
+        // Get current user ID
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { error = "UNAUTHORIZED", message = "Invalid token" });
+        }
+
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-        var words = await _wordService.GetWordsAsync(page, pageSize, q);
+        var words = await _wordService.GetWordsAsync(userId.Value, page, pageSize, q);
         return Ok(words);
     }
 
@@ -62,7 +78,14 @@ public class WordsController : ControllerBase
     [HttpGet("random")]
     public async Task<ActionResult<WordDto>> GetRandomWord()
     {
-        var word = await _wordService.GetRandomWordAsync();
+        // Get current user ID
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { error = "UNAUTHORIZED", message = "Invalid token" });
+        }
+
+        var word = await _wordService.GetRandomWordAsync(userId.Value);
         if (word == null)
         {
             return NotFound(new { error = "NOT_FOUND", resource = "Word", message = "No words found" });
@@ -77,12 +100,25 @@ public class WordsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<WordDto>> GetWordById(Guid id)
     {
-        var word = await _wordService.GetWordByIdAsync(id);
+        // Get current user ID
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { error = "UNAUTHORIZED", message = "Invalid token" });
+        }
+
+        var word = await _wordService.GetWordByIdAsync(id, userId.Value);
         if (word == null)
         {
             return NotFound(new { error = "NOT_FOUND", resource = "Word", message = "Word not found" });
         }
 
         return Ok(word);
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using LangTrack.Application.DTOs;
 using LangTrack.Application.Services;
 
@@ -6,6 +7,7 @@ namespace LangTrack.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
+[Authorize]
 public class StatsController : ControllerBase
 {
     private readonly IStatsService _statsService;
@@ -21,7 +23,20 @@ public class StatsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<StatsDto>> GetStats()
     {
-        var stats = await _statsService.GetStatsAsync();
+        // Get current user ID
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { error = "UNAUTHORIZED", message = "Invalid token" });
+        }
+
+        var stats = await _statsService.GetStatsAsync(userId.Value);
         return Ok(stats);
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 }
