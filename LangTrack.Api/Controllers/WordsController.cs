@@ -23,6 +23,7 @@ public class WordsController : ControllerBase
     /// Yeni kelime ekler
     /// </summary>
     [HttpPost]
+    [RequirePermission("words", "create")]
     public async Task<ActionResult<WordDto>> CreateWord([FromBody] CreateWordDto createWordDto)
     {
         // Get current user ID
@@ -51,10 +52,11 @@ public class WordsController : ControllerBase
     }
 
     /// <summary>
-    /// Kelimeleri listeler (sayfalama ve arama ile)
+    /// Kelimeleri listeler (sayfalama ve arama ile) - Sadece kendi kelimelerini görebilir
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<WordListDto>> GetWords(
+    [RequirePermission("words", "read")]
+    public async Task<ActionResult<WordListDto>> GetMyWords(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? q = null)
@@ -74,10 +76,11 @@ public class WordsController : ControllerBase
     }
 
     /// <summary>
-    /// Rastgele kelime getirir
+    /// Rastgele kelime getirir - Sadece kendi kelimelerinden
     /// </summary>
     [HttpGet("random")]
-    public async Task<ActionResult<WordDto>> GetRandomWord()
+    [RequirePermission("words", "read")]
+    public async Task<ActionResult<WordDto>> GetRandomMyWord()
     {
         // Get current user ID
         var userId = GetCurrentUserId();
@@ -96,9 +99,46 @@ public class WordsController : ControllerBase
     }
 
     /// <summary>
-    /// ID'ye göre kelime getirir
+    /// Rastgele kelime getirir - Tüm kullanıcıların kelimelerinden
+    /// </summary>
+    [HttpGet("random/global")]
+    [RequirePermission("words", "read")]
+    public async Task<ActionResult<WordDto>> GetRandomGlobalWord()
+    {
+        var word = await _wordService.GetRandomGlobalWordAsync();
+        if (word == null)
+        {
+            return NotFound(new { error = "NOT_FOUND", resource = "Word", message = "No words found in the system" });
+        }
+
+        return Ok(word);
+    }
+
+    /// <summary>
+    /// Tüm kullanıcıların kelimelerini listeler  - Sayfalama ve arama ile
+    /// </summary>
+    [HttpGet("all")]
+    [RequirePermission("words", "read")]
+    public async Task<ActionResult<WordListDto>> GetAllWords(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? q = null,
+        [FromQuery] Guid? userId = null)
+    {
+       
+
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+        var words = await _wordService.GetAllWordsAsync(page, pageSize, q, userId);
+        return Ok(words);
+    }
+
+    /// <summary>
+    /// ID'ye göre kelime getirir - Sadece kendi kelimelerini
     /// </summary>
     [HttpGet("{id}")]
+    [RequirePermission("words", "read")]
     public async Task<ActionResult<WordDto>> GetWordById(Guid id)
     {
         // Get current user ID
@@ -121,6 +161,7 @@ public class WordsController : ControllerBase
     /// Kelime siler (soft delete) - Kullanıcı sadece kendi kelimelerini, admin tüm kelimeleri silebilir
     /// </summary>
     [HttpDelete("{id}")]
+    [RequirePermission("words", "delete")]
     public async Task<ActionResult> DeleteWord(Guid id)
     {
         // Get current user ID
@@ -157,5 +198,20 @@ public class WordsController : ControllerBase
     {
         var userIdClaim = User.FindFirst("userId")?.Value;
         return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+    }
+
+    /// <summary>
+    /// Kullanıcının sadece kendi kelimelerine erişebildiğini doğrular
+    /// </summary>
+    private bool ValidateUserAccess(Guid? userId)
+    {
+        if (userId == null)
+        {
+            return false;
+        }
+
+        // Ek güvenlik: Kullanıcı ID'sinin geçerli olduğunu kontrol et
+        var currentUserId = GetCurrentUserId();
+        return currentUserId.HasValue && currentUserId.Value == userId.Value;
     }
 }

@@ -48,9 +48,29 @@ public class WordService : IWordService
         };
     }
 
+    public async Task<WordListDto> GetAllWordsAsync(int page = 1, int pageSize = 20, string? searchQuery = null, Guid? userId = null)
+    {
+        var words = await _wordRepository.GetAllWordsAsync(page, pageSize, searchQuery, userId);
+        var totalCount = await _wordRepository.GetAllWordsTotalCountAsync(searchQuery, userId);
+
+        return new WordListDto
+        {
+            Words = words.Select(MapToDto),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<WordDto?> GetRandomWordAsync(Guid userId)
     {
         var word = await _wordRepository.GetRandomAsync(userId);
+        return word != null ? MapToDto(word) : null;
+    }
+
+    public async Task<WordDto?> GetRandomGlobalWordAsync()
+    {
+        var word = await _wordRepository.GetRandomGlobalAsync();
         return word != null ? MapToDto(word) : null;
     }
 
@@ -80,7 +100,10 @@ public class WordService : IWordService
             Example = word.Example,
             Tags = word.Tags,
             CreatedAt = word.CreatedAt,
-            UpdatedAt = word.UpdatedAt
+            UpdatedAt = word.UpdatedAt,
+            UserId = word.UserId,
+            UserEmail = word.User?.Email,
+            UserName = word.User != null ? $"{word.User.FirstName} {word.User.LastName}" : null
         };
     }
 }

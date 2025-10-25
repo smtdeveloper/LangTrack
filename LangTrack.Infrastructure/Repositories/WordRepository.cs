@@ -43,6 +43,22 @@ public class WordRepository : IWordRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<Word?> GetRandomGlobalAsync()
+    {
+        var count = await _context.Words.CountAsync(w => !w.IsDeleted);
+        if (count == 0) return null;
+
+        var random = new Random();
+        var skip = random.Next(0, count);
+        
+        return await _context.Words
+            .Include(w => w.User)
+            .Include(w => w.StudyLogs)
+            .Where(w => !w.IsDeleted)
+            .Skip(skip)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<IEnumerable<Word>> GetAllAsync(Guid userId, int page = 1, int pageSize = 20, string? searchQuery = null)
     {
         var query = _context.Words.Where(w => w.UserId == userId && !w.IsDeleted);
@@ -56,6 +72,34 @@ public class WordRepository : IWordRepository
 
         return await query
             .Include(w => w.StudyLogs)
+            .OrderBy(w => w.Text)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Word>> GetAllWordsAsync(int page = 1, int pageSize = 20, string? searchQuery = null, Guid? userId = null)
+    {
+        var query = _context.Words
+            .Include(w => w.User)
+            .Include(w => w.StudyLogs)
+            .Where(w => !w.IsDeleted);
+
+        // Belirli bir kullanıcının kelimelerini filtrele
+        if (userId.HasValue)
+        {
+            query = query.Where(w => w.UserId == userId.Value);
+        }
+
+        // Arama sorgusu
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(w => 
+                w.Text.Contains(searchQuery) || 
+                w.Meaning.Contains(searchQuery));
+        }
+
+        return await query
             .OrderBy(w => w.Text)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -79,6 +123,27 @@ public class WordRepository : IWordRepository
     {
         var query = _context.Words.Where(w => w.UserId == userId && !w.IsDeleted);
 
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(w => 
+                w.Text.Contains(searchQuery) || 
+                w.Meaning.Contains(searchQuery));
+        }
+
+        return await query.CountAsync();
+    }
+
+    public async Task<int> GetAllWordsTotalCountAsync(string? searchQuery = null, Guid? userId = null)
+    {
+        var query = _context.Words.Where(w => !w.IsDeleted);
+
+        // Belirli bir kullanıcının kelimelerini filtrele
+        if (userId.HasValue)
+        {
+            query = query.Where(w => w.UserId == userId.Value);
+        }
+
+        // Arama sorgusu
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.Where(w => 

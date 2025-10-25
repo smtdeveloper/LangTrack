@@ -1,5 +1,6 @@
 using LangTrack.Domain.Entities;
 using LangTrack.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace LangTrack.Api.Data;
 
@@ -10,8 +11,8 @@ public static class SeedData
         // Seed Roles and Permissions first
         await SeedRolesAndPermissionsAsync(context);
         
-        // Words will be added by users after registration
-        // No need to seed words with UserId constraint
+        // Seed test user and A1 words
+        await SeedTestUserAndWordsAsync(context);
     }
 
     private static async Task SeedRolesAndPermissionsAsync(LangTrackDbContext context)
@@ -109,5 +110,48 @@ public static class SeedData
 
         context.RolePermissions.AddRange(rolePermissions);
         await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedTestUserAndWordsAsync(LangTrackDbContext context)
+    {
+        // Test kullanıcısı ekle (eğer yoksa)
+        var testUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
+        if (testUser == null)
+        {
+            // Önce Student rolünü al
+            var studentRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
+            if (studentRole == null) return; // Role yoksa çık
+
+            testUser = new User
+            {
+                Email = "test@example.com",
+                PasswordHash = "Test123!", // Basit hash için şimdilik plain text
+                FirstName = "Test",
+                LastName = "User",
+                IsActive = true,
+                RoleId = studentRole.Id // RoleId'yi baştan ata
+            };
+            context.Users.Add(testUser);
+            await context.SaveChangesAsync();
+        }
+
+        // A1 seviyesinde test kelimeleri ekle (eğer yoksa)
+        if (!context.Words.Any(w => w.UserId == testUser.Id))
+        {
+            var a1Words = new List<Word>
+            {
+                new Word
+                {
+                    UserId = testUser.Id,
+                    Text = "hello",
+                    Meaning = "merhaba",
+                    Example = "Hello, how are you?",
+                    Tags = "greeting,a1,basic"
+                }
+            };
+
+            context.Words.AddRange(a1Words);
+            await context.SaveChangesAsync();
+        }
     }
 }
