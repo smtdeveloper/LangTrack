@@ -18,19 +18,19 @@ public class WordRepository : IWordRepository
     {
         return await _context.Words
             .Include(w => w.StudyLogs)
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId && !w.IsDeleted);
     }
 
     public async Task<Word?> GetByTextAsync(string text, Guid userId)
     {
         return await _context.Words
             .Include(w => w.StudyLogs)
-            .FirstOrDefaultAsync(w => w.Text.ToLower() == text.ToLower() && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Text.ToLower() == text.ToLower() && w.UserId == userId && !w.IsDeleted);
     }
 
     public async Task<Word?> GetRandomAsync(Guid userId)
     {
-        var count = await _context.Words.CountAsync(w => w.UserId == userId);
+        var count = await _context.Words.CountAsync(w => w.UserId == userId && !w.IsDeleted);
         if (count == 0) return null;
 
         var random = new Random();
@@ -38,14 +38,14 @@ public class WordRepository : IWordRepository
         
         return await _context.Words
             .Include(w => w.StudyLogs)
-            .Where(w => w.UserId == userId)
+            .Where(w => w.UserId == userId && !w.IsDeleted)
             .Skip(skip)
             .FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<Word>> GetAllAsync(Guid userId, int page = 1, int pageSize = 20, string? searchQuery = null)
     {
-        var query = _context.Words.Where(w => w.UserId == userId);
+        var query = _context.Words.Where(w => w.UserId == userId && !w.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -72,12 +72,12 @@ public class WordRepository : IWordRepository
     public async Task<bool> ExistsByTextAsync(string text, Guid userId)
     {
         return await _context.Words
-            .AnyAsync(w => w.Text.ToLower() == text.ToLower() && w.UserId == userId);
+            .AnyAsync(w => w.Text.ToLower() == text.ToLower() && w.UserId == userId && !w.IsDeleted);
     }
 
     public async Task<int> GetTotalCountAsync(Guid userId, string? searchQuery = null)
     {
-        var query = _context.Words.Where(w => w.UserId == userId);
+        var query = _context.Words.Where(w => w.UserId == userId && !w.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -87,5 +87,38 @@ public class WordRepository : IWordRepository
         }
 
         return await query.CountAsync();
+    }
+
+    public async Task<bool> SoftDeleteAsync(Guid id, Guid userId)
+    {
+        var word = await _context.Words
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId && !w.IsDeleted);
+        
+        if (word == null) return false;
+        
+        word.IsDeleted = true;
+        word.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> SoftDeleteByAdminAsync(Guid id)
+    {
+        var word = await _context.Words
+            .FirstOrDefaultAsync(w => w.Id == id && !w.IsDeleted);
+        
+        if (word == null) return false;
+        
+        word.IsDeleted = true;
+        word.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<Word?> GetByIdForAdminAsync(Guid id)
+    {
+        return await _context.Words
+            .Include(w => w.StudyLogs)
+            .FirstOrDefaultAsync(w => w.Id == id);
     }
 }

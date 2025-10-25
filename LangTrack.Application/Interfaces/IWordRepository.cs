@@ -11,4 +11,7 @@ public interface IWordRepository
     Task<Word> CreateAsync(Word word);
     Task<bool> ExistsByTextAsync(string text, Guid userId);
     Task<int> GetTotalCountAsync(Guid userId, string? searchQuery = null);
+    Task<bool> SoftDeleteAsync(Guid id, Guid userId);
+    Task<bool> SoftDeleteByAdminAsync(Guid id);
+    Task<Word?> GetByIdForAdminAsync(Guid id);
 }

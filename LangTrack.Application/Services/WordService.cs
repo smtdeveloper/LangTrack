@@ -60,6 +60,16 @@ public class WordService : IWordService
         return word != null ? MapToDto(word) : null;
     }
 
+    public async Task<bool> DeleteWordAsync(Guid id, Guid userId)
+    {
+        return await _wordRepository.SoftDeleteAsync(id, userId);
+    }
+
+    public async Task<bool> DeleteWordByAdminAsync(Guid id)
+    {
+        return await _wordRepository.SoftDeleteByAdminAsync(id);
+    }
+
     private static WordDto MapToDto(Word word)
     {
         return new WordDto

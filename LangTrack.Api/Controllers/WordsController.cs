@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using LangTrack.Application.DTOs;
 using LangTrack.Application.Services;
 using LangTrack.Api.Validators;
+using LangTrack.Api.Attributes;
 
 namespace LangTrack.Api.Controllers;
 
@@ -114,6 +115,42 @@ public class WordsController : ControllerBase
         }
 
         return Ok(word);
+    }
+
+    /// <summary>
+    /// Kelime siler (soft delete) - Kullanıcı sadece kendi kelimelerini, admin tüm kelimeleri silebilir
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteWord(Guid id)
+    {
+        // Get current user ID
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { error = "UNAUTHORIZED", message = "Invalid token" });
+        }
+
+        // Check if user is admin
+        var isAdmin = User.IsInRole("Admin");
+        
+        bool result;
+        if (isAdmin)
+        {
+            // Admin can delete any word
+            result = await _wordService.DeleteWordByAdminAsync(id);
+        }
+        else
+        {
+            // Regular user can only delete their own words
+            result = await _wordService.DeleteWordAsync(id, userId.Value);
+        }
+
+        if (!result)
+        {
+            return NotFound(new { error = "NOT_FOUND", resource = "Word", message = "Word not found or already deleted" });
+        }
+
+        return NoContent();
     }
 
     private Guid? GetCurrentUserId()
