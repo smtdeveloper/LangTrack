@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LangTrack.Domain", "LangTra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LangTrack.Infrastructure", "LangTrack.Infrastructure\LangTrack.Infrastructure.csproj", "{529D04CF-3B58-4A8E-9785-B8B5F1CFBF1C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LangTrack.Application", "LangTrack.Application\LangTrack.Application.csproj", "{80C444A8-92FB-4E59-B32E-7CBD2048C073}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{529D04CF-3B58-4A8E-9785-B8B5F1CFBF1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{529D04CF-3B58-4A8E-9785-B8B5F1CFBF1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{529D04CF-3B58-4A8E-9785-B8B5F1CFBF1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80C444A8-92FB-4E59-B32E-7CBD2048C073}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80C444A8-92FB-4E59-B32E-7CBD2048C073}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80C444A8-92FB-4E59-B32E-7CBD2048C073}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80C444A8-92FB-4E59-B32E-7CBD2048C073}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
